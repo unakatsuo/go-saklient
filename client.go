@@ -3,7 +3,6 @@ package saklient
 import (
 	"encoding/base64"
 	"fmt"
-	"net/http"
 
 	"github.com/dghubble/sling"
 )
@@ -28,38 +27,7 @@ func newClient(token string, secret string) *Client {
 	return c
 }
 
-type ServerPlan struct {
-	ID int `json:"ID"`
-}
-
-type Server struct {
-	api               *APIService
-	Name              string `json:"Name"`
-	Description       string `json:"Description,omitempty"`
-	PlanID            int
-	Plan              ServerPlan    `json:"Plan"`
-	Tags              []string      `json:"Tags"`
-	ConnectedSwitches []interface{} `json:"ConnectedSwitches"`
-}
-
 type APIError struct {
-}
-
-type ServerResponse struct {
-}
-
-func (s *Server) Save() (*ServerResponse, *http.Response, error) {
-	req := struct {
-		Server *Server `json:"Server"`
-		Count  int     `json:"Count"`
-	}{
-		Server: s,
-	}
-
-	respServer := new(ServerResponse)
-	apiErr := new(APIError)
-	resp, err := s.api.client.NewSling().Post("server").BodyJSON(&req).Receive(respServer, apiErr)
-	return respServer, resp, err
 }
 
 type APIService struct {
@@ -83,12 +51,4 @@ var API struct {
 
 func init() {
 	API.Authorize = BasicAuthorize
-}
-
-type ServerService struct {
-	api *APIService
-}
-
-func (s *ServerService) Create() (*Server, error) {
-	return &Server{api: s.api}, nil
 }
