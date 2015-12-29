@@ -44,6 +44,7 @@ func (e *APIError) Error() string {
 type APIService struct {
 	client *Client
 	Server *ServerService
+	Disk   *DiskService
 }
 
 type AuthorizeFunc func(token string, secret string) *APIService
@@ -53,6 +54,9 @@ func BasicAuthorize(token string, secret string) *APIService {
 		client: newClient(token, secret),
 	}
 	api.Server = &ServerService{api: api}
+	api.Disk = &DiskService{
+		api: api,
+	}
 	return api
 }
 
