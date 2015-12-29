@@ -28,6 +28,17 @@ func newClient(token string, secret string) *Client {
 }
 
 type APIError struct {
+	HTTPCode  int
+	Fatal     bool   `json:"is_fatal"`
+	Serial    string `json:"serial"`
+	Status    string `json:"status"`
+	ErrorCode string `json:"error_code"`
+	ErrorMsg  string `json:"error_msg"`
+}
+
+func (e *APIError) Error() string {
+	return fmt.Sprintf("HTTP Status Code: %d, Error Code: %s, Error Message: %s",
+		e.HTTPCode, e.ErrorCode, e.ErrorMsg)
 }
 
 type APIService struct {
