@@ -72,10 +72,73 @@ type Disk struct {
 	Name        string `json:"Name"`
 	Description string `json:"Description"`
 	Plan        struct {
-		ID   int    `json:"ID"`
-		Name string `json:"Name"`
+		ID           int    `json:"ID"`
+		Name         string `json:"Name"`
+		StorageClass string `json:"StroageClass"`
 	} `json:"Plan"`
-	SizeMB int `json:"SizeMB"`
+	SizeMB     int    `json:"SizeMB"`
+	Connection string `json:"Connection"`
+	SourceDisk *struct {
+		ID int `json:"ID"`
+	} `json:"SourceDisk"`
+	SourceArchive *struct {
+		ID int `json:"ID"`
+	} `json:"SourceArchive"`
+	Availability    string `json:"Availability"`
+	ConnectionOrder string `json:"ConnectionOrder"`
+	ReinstallCount  int    `json:"ReinstallCount"`
+	MigratedMB      int    `json:"MigratedMB"`
+	WaitingJobCount int    `json:"WaitingJobCount"`
+	JobStatus       struct {
+	} `json:"JobStatus"`
+	ServiceClass string `json:"ServiceClass"`
+	BundleID     string `json:"BundleID"`
+	CreatedAt    string `json:"CreatedAt"`
+	Icon         string `json:"Icon"`
+	Storage      struct {
+		ID          string `json:"ID"`
+		Class       string `json:"Class"`
+		Name        string `json:"Name"`
+		Description string `json:"Description"`
+		Zone        struct {
+			ID           int    `json:"ID"`
+			DisplayOrder int    `json:"DisplayOrder"`
+			Name         string `json:"Name"`
+			Description  string `json:"Description"`
+			IsDummy      bool   `json:"IsDummy"`
+			VNCProxy     struct {
+				HostName  string `json:"HostName"`
+				IPAddress string `json:"IPAddress"`
+			}
+			FTPServer struct {
+				HostName  string `json:"HostName"`
+				IPAddress string `json:"IPAddress"`
+			}
+			Settings struct {
+				Subnet struct {
+					Plan struct {
+						Member []int `json:"Member"`
+						Staff  []int `json:"Staff"`
+					} `json:"Plan"`
+				} `json:"Subnet"`
+			} `json:"Setteings"`
+			Region struct {
+				ID          int      `json:"ID"`
+				Name        string   `json:"Name"`
+				Description string   `json:"Description"`
+				NameServers []string `json:"NameServers"`
+			} `json:"Region"`
+		} `json:"Zone"`
+		DiskPlan struct {
+			ID           int    `json:"ID"`
+			StorageClass string `json:"StorageClass"`
+			Name         string `json:"Name"`
+			Capacity     []int  `json:"Capacity"`
+		} `json:"DiskPlan"`
+	} `json:"Storage"`
+	Appliance *struct{} `json:"Appliance"`
+	Server    *struct{} `json:"Server"`
+	Tags      []string  `json:"Tags"`
 }
 
 func (l *Disk) Save() error {
