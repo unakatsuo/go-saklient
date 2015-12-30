@@ -1,14 +1,20 @@
 package saklient
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 type DiskService struct {
-	api    *APIService
-	offset int
-	limit  int
+	api      *APIService
+	offset   int
+	limit    int
+	tags     []string
+	filter   map[string]interface{}
+	sortKeys []string
 }
 
 func (l *DiskService) Offset(offset int) *DiskService {
@@ -21,10 +27,106 @@ func (l *DiskService) Limit(limit int) *DiskService {
 	return l
 }
 
+func (l *DiskService) SortByName(reverse bool) *DiskService {
+	key := "Disk.Name"
+	if reverse {
+		key = "-" + key
+	}
+	l.sortKeys = append(l.sortKeys, key)
+	return l
+}
+
+func (l *DiskService) SortBySize(reverse bool) *DiskService {
+	key := "Disk.SizeMB"
+	if reverse {
+		key = "-" + key
+	}
+	l.sortKeys = append(l.sortKeys, key)
+	return l
+}
+
+func (l *DiskService) FilterBy(key string, value interface{}, multiple bool) *DiskService {
+	// TODO: multipe case
+	l.filter[key] = value
+	return l
+}
+
+func (l *DiskService) WithNameLike(name string) *DiskService {
+	return l.FilterBy("Disk.Name", name, false)
+}
+
+func (l *DiskService) WithTag(tag string) *DiskService {
+	l.tags = append(l.tags, tag)
+	return l
+}
+
+func (l *DiskService) WithTags(tags []string) *DiskService {
+	for _, t := range tags {
+		l.tags = append(l.tags, t)
+	}
+	return l
+}
+
+func (l *DiskService) WithSizeGib(size int) *DiskService {
+	return l.FilterBy("Disk.SizeMB", size*1024, false)
+}
+
+func (l *DiskService) WithServerID(serverID string) *DiskService {
+	return l.FilterBy("Disk.Server.ID", serverID, false)
+}
+
 func (l *DiskService) Reset() *DiskService {
 	l.limit = 0
 	l.offset = 0
+	l.tags = []string{}
+	l.sortKeys = []string{}
+	l.filter = map[string]interface{}{}
 	return l
+}
+
+func buildJSONQueryString(req interface{}) (string, error) {
+	buf := new(bytes.Buffer)
+	err := json.NewEncoder(buf).Encode(req)
+	if err != nil {
+		return "", err
+	}
+	return url.QueryEscape(buf.String()), nil
+}
+
+func (l *DiskService) Find() ([]*Disk, error) {
+	jsonResp := &struct {
+		Total int     `json:"Total`
+		From  int     `json:"From"`
+		Count int     `json:"Count"`
+		Disks []*Disk `json:"Disks"`
+	}{}
+	getReq := &struct {
+		From   int                    `json:"From,omitempty"`
+		Count  int                    `json:"Count,omitempty"`
+		Sort   []string               `json:"Sort,omitempty"`
+		Filter map[string]interface{} `json:"Filter,omitempty"`
+	}{
+		From:   l.offset,
+		Count:  l.limit,
+		Filter: l.filter,
+		Sort:   l.sortKeys,
+	}
+	apiErr := new(APIError)
+	jsonQuery, err := buildJSONQueryString(getReq)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := l.api.client.NewSling().Get(fmt.Sprintf("disk?%s", jsonQuery)).Receive(jsonResp, apiErr)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode >= 400 {
+		return nil, apiErr
+	}
+	for _, d := range jsonResp.Disks {
+		d.client = l.api.client
+	}
+	return jsonResp.Disks, nil
 }
 
 func (l *DiskService) Create() *Disk {
