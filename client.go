@@ -55,7 +55,12 @@ func (c *Client) Request(method string, path string, reqParams interface{}, resp
 	var reqBody io.Reader
 	if method == "GET" {
 		// Embed JSON string at query string.
-		destURL.RawQuery = url.QueryEscape(jsonReq.String())
+		// ** url.QueryEscape() converts " " to + but
+		// API Server does not recognize it so it had to be changed to "%20".
+		// This is important for filter queries like .WithNameLike().
+		destURL.RawQuery = strings.Replace(
+			url.QueryEscape(jsonReq.String()),
+			"+", "%20", -1)
 	} else {
 		reqBody = jsonReq
 	}
