@@ -125,9 +125,10 @@ func (e *APIError) Error() string {
 }
 
 type APIService struct {
-	client *Client
-	Server *ServerService
-	Disk   *DiskService
+	client  *Client
+	Server  *ServerService
+	Disk    *DiskService
+	Archive *ArchiveService
 }
 
 type AuthorizeFunc func(token string, secret string) *APIService
@@ -140,6 +141,8 @@ func BasicAuthorize(token string, secret string) *APIService {
 	api.Disk = &DiskService{
 		api: api,
 	}
+	api.Archive = &ArchiveService{api: api}
+	api.Archive.Reset()
 	return api
 }
 
