@@ -1,12 +1,6 @@
 package saklient
 
-import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"net/url"
-)
+import "fmt"
 
 type DiskService struct {
 	api      *APIService
@@ -84,15 +78,6 @@ func (l *DiskService) Reset() *DiskService {
 	return l
 }
 
-func buildJSONQueryString(req interface{}) (string, error) {
-	buf := new(bytes.Buffer)
-	err := json.NewEncoder(buf).Encode(req)
-	if err != nil {
-		return "", err
-	}
-	return url.QueryEscape(buf.String()), nil
-}
-
 func (l *DiskService) Find() ([]*Disk, error) {
 	jsonResp := &struct {
 		Total int     `json:"Total`
@@ -111,18 +96,11 @@ func (l *DiskService) Find() ([]*Disk, error) {
 		Filter: l.filter,
 		Sort:   l.sortKeys,
 	}
-	apiErr := new(APIError)
-	jsonQuery, err := buildJSONQueryString(getReq)
+	err := l.api.client.Request("GET", "disk", getReq, jsonResp)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := l.api.client.NewSling().Get(fmt.Sprintf("disk?%s", jsonQuery)).Receive(jsonResp, apiErr)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode >= 400 {
-		return nil, apiErr
-	}
+
 	for _, d := range jsonResp.Disks {
 		d.client = l.api.client
 	}
@@ -141,13 +119,9 @@ func (l *DiskService) GetByID(id string) (*Disk, error) {
 	}{
 		Disk: l.Create(),
 	}
-	apiErr := new(APIError)
-	resp, err := l.api.client.NewSling().Get(fmt.Sprintf("disk/%s", id)).Receive(jsonResp, apiErr)
+	err := l.api.client.Request("GET", fmt.Sprintf("disk/%s", id), nil, jsonResp)
 	if err != nil {
 		return nil, err
-	}
-	if resp.StatusCode >= 400 {
-		return nil, apiErr
 	}
 	return jsonResp.Disk, nil
 }
@@ -244,9 +218,6 @@ type Disk struct {
 }
 
 func (l *Disk) Save() error {
-	sling := l.client.NewSling()
-	apiErr := new(APIError)
-	var resp *http.Response
 	var err error
 	if l.ID == "" {
 		postResp := &struct {
@@ -270,7 +241,7 @@ func (l *Disk) Save() error {
 			Disk: dr,
 		}
 
-		resp, err = sling.Post("disk").BodyJSON(postReq).Receive(postResp, apiErr)
+		err = l.client.Request("POST", "disk", postReq, postResp)
 	} else {
 		putResp := &struct {
 			IsOK    bool   `json:"is_ok"`
@@ -278,32 +249,15 @@ func (l *Disk) Save() error {
 		}{
 			IsOK: false,
 		}
-		resp, err = sling.Put("disk").BodyJSON(l).Receive(putResp, apiErr)
+		err = l.client.Request("PUT", "disk", l, putResp)
 	}
 
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode >= 400 {
-		apiErr.HTTPCode = resp.StatusCode
-		return apiErr
-	}
-	return nil
+	return err
 }
 
 func (l *Disk) Destroy() error {
-	sling := l.client.NewSling()
 	if l.ID == "" {
 		return fmt.Errorf("is not saved yet")
 	}
-	apiErr := new(APIError)
-
-	resp, err := sling.Delete(fmt.Sprintf("disk/%s", l.ID)).Receive(nil, apiErr)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode >= 400 {
-		return apiErr
-	}
-	return nil
+	return l.client.Request("DELETE", fmt.Sprintf("disk/%s", l.ID), nil, nil)
 }
