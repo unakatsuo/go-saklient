@@ -7,14 +7,16 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"strings"
 )
 
 type Client struct {
-	httpClient *http.Client
-	BaseURL    *url.URL
-	Headers    http.Header
+	httpClient  *http.Client
+	BaseURL     *url.URL
+	Headers     http.Header
+	DebugDumper io.Writer
 }
 
 // Allow to set custom http.Client
@@ -63,11 +65,25 @@ func (c *Client) Request(method string, path string, reqParams interface{}, resp
 		return err
 	}
 	httpReq.Header = c.Headers
+	if c.DebugDumper != nil {
+		buf, err := httputil.DumpRequestOut(httpReq, true)
+		if err != nil {
+			return err
+		}
+		c.DebugDumper.Write(buf)
+	}
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
+	if c.DebugDumper != nil {
+		buf, err := httputil.DumpResponse(resp, true)
+		if err != nil {
+			return err
+		}
+		c.DebugDumper.Write(buf)
+	}
 	if strings.Contains(resp.Header.Get("Content-Type"), "application/json") {
 		if code := resp.StatusCode; 200 <= code && code < 300 {
 			if respSuccess != nil {
