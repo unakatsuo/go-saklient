@@ -46,7 +46,7 @@ func (l *DiskService) FilterBy(key string, value interface{}, multiple bool) *Di
 }
 
 func (l *DiskService) WithNameLike(name string) *DiskService {
-	return l.FilterBy("Disk.Name", name, false)
+	return l.FilterBy("Name", name, false)
 }
 
 func (l *DiskService) WithTag(tag string) *DiskService {
@@ -62,11 +62,11 @@ func (l *DiskService) WithTags(tags []string) *DiskService {
 }
 
 func (l *DiskService) WithSizeGib(size int) *DiskService {
-	return l.FilterBy("Disk.SizeMB", size*1024, false)
+	return l.FilterBy("SizeMB", size*1024, false)
 }
 
 func (l *DiskService) WithServerID(serverID string) *DiskService {
-	return l.FilterBy("Disk.Server.ID", serverID, false)
+	return l.FilterBy("Server.ID", serverID, false)
 }
 
 func (l *DiskService) Reset() *DiskService {
