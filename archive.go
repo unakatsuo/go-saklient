@@ -104,10 +104,6 @@ func (l *ArchiveService) GetByID(id string) (*Archive, error) {
 	return jsonResp.Archive, nil
 }
 
-type subResourceID struct {
-	ID string `json:"ID"`
-}
-
 type archiveRequest struct {
 	Name        string `json:"Name"`
 	Description string `json:"Description,omitempty"`
@@ -117,10 +113,6 @@ type archiveRequest struct {
 	SizeMB        int            `json:"SizeMB,omitempty"`
 	SourceDisk    *subResourceID `json:"SourceDisk,omitempty"`
 	SourceArchive *subResourceID `json:"SourceArchive,omitempty"`
-}
-
-type SourceResource interface {
-	SourceID() string
 }
 
 type Archive struct {
@@ -218,11 +210,12 @@ func (l *Archive) Save() error {
 		}
 		dr.Plan.ID = l.Plan.ID
 		if l.Source != nil {
+			subRes := &subResourceID{ID: l.Source.SourceID()}
 			switch t := l.Source.(type) {
 			case *Archive:
-				dr.SourceArchive = &subResourceID{ID: l.Source.SourceID()}
-			//case *Disk:
-			//dr.SourceDisk = &subResourceID{ID: l.Source.SourceID()}
+				dr.SourceArchive = subRes
+			case *Disk:
+				dr.SourceDisk = subRes
 			default:
 				return fmt.Errorf("Unsupported .Source type: %T", t)
 			}

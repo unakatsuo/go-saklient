@@ -35,6 +35,38 @@ func TestDiskService_CRUD(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	archives, err := api.Archive.WithNameLike("CentOS 64bit").WithSizeGib(20).WithSharedScope().Limit(1).Find()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(archives) != 1 {
+		t.Fatal("Failed to find the archive 'CentOS 64bit' with 20GB")
+	}
+	archive := archives[0]
+	if archive.ID == "" {
+		t.Fatal("ID is empty")
+	}
+
+	disk = api.Disk.Create()
+	disk.Name = "test"
+	disk.Plan.ID = 4
+	disk.Source = archive
+	err = disk.Save()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if disk.ID == "" {
+		t.Fatal("ID is unset")
+	}
+	err = disk.SleepWhileCopying()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = disk.Destroy()
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func createTestDisk(name string) (*Disk, error) {

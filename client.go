@@ -185,3 +185,11 @@ func (b *basicQuery) WithTags(tags []string) {
 		b.tags = append(b.tags, t)
 	}
 }
+
+type SourceResource interface {
+	SourceID() string
+}
+
+type subResourceID struct {
+	ID string `json:"ID"`
+}

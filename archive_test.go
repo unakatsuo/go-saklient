@@ -26,22 +26,22 @@ func TestArchiveService_CRUD(t *testing.T) {
 		t.Fatal("ID is empty")
 	}
 
-	newArchive := api.Archive.Create()
-	newArchive.Plan.ID = 2
-	newArchive.Name = "test"
-	newArchive.Source = archive
-	err = newArchive.Save()
+	copyArchive := api.Archive.Create()
+	copyArchive.Plan.ID = 2
+	copyArchive.Name = "test"
+	copyArchive.Source = archive
+	err = copyArchive.Save()
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = newArchive.SleepWhileCopying()
+	err = copyArchive.SleepWhileCopying()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if newArchive.Availability != "available" {
-		t.Fatalf("Unexpected availability: %s", newArchive.Availability)
+	if copyArchive.Availability != "available" {
+		t.Fatalf("Unexpected availability: %s", copyArchive.Availability)
 	}
-	err = newArchive.Destroy()
+	err = copyArchive.Destroy()
 	if err != nil {
 		t.Fatal(err)
 	}

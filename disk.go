@@ -1,6 +1,9 @@
 package saklient
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type DiskService struct {
 	api *APIService
@@ -109,39 +112,32 @@ type diskRequest struct {
 	Plan        struct {
 		ID int `json:"ID"`
 	} `json:"Plan"`
-	SizeMB     int    `json:"SizeMB,omitempty"`
-	Connection string `json:"Connection,omitempty"`
-	SourceDisk *struct {
-		ID int `json:"ID,omitempty"`
-	} `json:"SourceDisk,omitempty"`
-	SourceArchive *struct {
-		ID int `json:"ID,omitempty"`
-	} `json:"SourceArchive,omitempty"`
+	SizeMB        int            `json:"SizeMB,omitempty"`
+	Connection    string         `json:"Connection,omitempty"`
+	SourceDisk    *subResourceID `json:"SourceDisk,omitempty"`
+	SourceArchive *subResourceID `json:"SourceArchive,omitempty"`
 }
 
 type Disk struct {
-	client      *Client
-	ID          string `json:"ID"`
-	Name        string `json:"Name"`
-	Description string `json:"Description"`
+	client      *Client `json:"-"`
+	ID          string  `json:"ID"`
+	Name        string  `json:"Name"`
+	Description string  `json:"Description"`
 	Plan        struct {
 		ID           int    `json:"ID"`
 		Name         string `json:"Name"`
 		StorageClass string `json:"StroageClass"`
 	} `json:"Plan"`
-	SizeMB     int    `json:"SizeMB"`
-	Connection string `json:"Connection"`
-	SourceDisk *struct {
-		ID int `json:"ID"`
-	} `json:"SourceDisk"`
-	SourceArchive *struct {
-		ID int `json:"ID"`
-	} `json:"SourceArchive"`
-	Availability    string `json:"Availability"`
-	ConnectionOrder string `json:"ConnectionOrder"`
-	ReinstallCount  int    `json:"ReinstallCount"`
-	MigratedMB      int    `json:"MigratedMB"`
-	WaitingJobCount int    `json:"WaitingJobCount"`
+	SizeMB          int            `json:"SizeMB"`
+	Connection      string         `json:"Connection"`
+	Source          SourceResource `json:"-"`
+	SourceDisk      *Disk          `json:"SourceDisk"`
+	SourceArchive   *Archive       `json:"SourceArchive"`
+	Availability    string         `json:"Availability"`
+	ConnectionOrder string         `json:"ConnectionOrder"`
+	ReinstallCount  int            `json:"ReinstallCount"`
+	MigratedMB      int            `json:"MigratedMB"`
+	WaitingJobCount int            `json:"WaitingJobCount"`
 	JobStatus       struct {
 	} `json:"JobStatus"`
 	ServiceClass string `json:"ServiceClass"`
@@ -194,6 +190,10 @@ type Disk struct {
 	Tags      []string  `json:"Tags"`
 }
 
+func (l *Disk) SourceID() string {
+	return l.ID
+}
+
 func (l *Disk) Save() error {
 	var err error
 	if l.ID == "" {
@@ -210,8 +210,19 @@ func (l *Disk) Save() error {
 			Name: l.Name,
 		}
 		dr.Plan.ID = l.Plan.ID
-		dr.SizeMB = l.SizeMB
-
+		if l.Source != nil {
+			subRes := &subResourceID{ID: l.Source.SourceID()}
+			switch t := l.Source.(type) {
+			case *Archive:
+				dr.SourceArchive = subRes
+			case *Disk:
+				dr.SourceDisk = subRes
+			default:
+				return fmt.Errorf("Unsupported .Source type: %T", t)
+			}
+		} else {
+			dr.SizeMB = l.SizeMB
+		}
 		postReq := &struct {
 			Disk *diskRequest `json:"Disk"`
 		}{
@@ -237,4 +248,41 @@ func (l *Disk) Destroy() error {
 		return fmt.Errorf("is not saved yet")
 	}
 	return l.client.Request("DELETE", fmt.Sprintf("disk/%s", l.ID), nil, nil)
+}
+
+func (l *Disk) Reload() error {
+	if l.ID == "" {
+		return fmt.Errorf("This is not saved yet")
+	}
+	jsonResp := &struct {
+		Disk *Disk `json:"Disk"`
+	}{
+		Disk: &Disk{client: l.client},
+	}
+	err := l.client.Request("GET", fmt.Sprintf("disk/%s", l.ID), nil, jsonResp)
+	if err != nil {
+		return err
+	}
+	*l = *jsonResp.Disk
+	return nil
+}
+
+func (l *Disk) SleepWhileCopying() error {
+	if l.ID == "" {
+		return fmt.Errorf("This is not saved yet")
+	}
+	var err error
+	for i := 0; i < 1000; i++ {
+		if i > 0 {
+			time.Sleep(1 * time.Second)
+			err = l.Reload()
+			if err != nil {
+				continue
+			}
+		}
+		if l.Availability == "available" {
+			break
+		}
+	}
+	return err
 }
