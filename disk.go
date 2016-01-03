@@ -285,3 +285,20 @@ func (l *Disk) SleepWhileCopying() error {
 func (l *Disk) client() *Client {
 	return l.service.api.client
 }
+
+func (l *Disk) ConnectTo(server *Server) error {
+	if l.ID == "" {
+		return fmt.Errorf("Disk is not saved")
+	}
+	if server.ID == "" {
+		return fmt.Errorf("Server is invalid")
+	}
+	return l.client().Request("PUT", fmt.Sprintf("disk/%s/to/server/%s", l.ID, server.ID), nil, nil)
+}
+
+func (l *Disk) Disconnect() error {
+	if l.ID == "" {
+		return fmt.Errorf("Disk is not saved")
+	}
+	return l.client().Request("DELETE", fmt.Sprintf("disk/%s/to/server", l.ID), nil, nil)
+}

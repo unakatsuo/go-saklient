@@ -47,4 +47,10 @@ func TestServerService_CRUD(t *testing.T) {
 	if !(disk.SizeMB == archive.SizeMB && disk.SourceArchive.ID == archive.ID) {
 		t.Fatal(fmt.Sprintf("Invalid Disk %s info", disk.ID))
 	}
+
+	err = disk.ConnectTo(server)
+	if err != nil {
+		t.Fatal(err)
+	}
+	server.Reload()
 }
