@@ -82,14 +82,14 @@ func (l *DiskService) Find() ([]*Disk, error) {
 	}
 
 	for _, d := range jsonResp.Disks {
-		d.client = l.api.client
+		d.service = l
 	}
 	return jsonResp.Disks, nil
 }
 
 func (l *DiskService) Create() *Disk {
 	return &Disk{
-		client: l.api.client,
+		service: l,
 	}
 }
 
@@ -119,10 +119,10 @@ type diskRequest struct {
 }
 
 type Disk struct {
-	client      *Client `json:"-"`
-	ID          string  `json:"ID"`
-	Name        string  `json:"Name"`
-	Description string  `json:"Description"`
+	service     *DiskService `json:"-"`
+	ID          string       `json:"ID"`
+	Name        string       `json:"Name"`
+	Description string       `json:"Description"`
 	Plan        struct {
 		ID           int    `json:"ID"`
 		Name         string `json:"Name"`
@@ -229,7 +229,7 @@ func (l *Disk) Save() error {
 			Disk: dr,
 		}
 
-		err = l.client.Request("POST", "disk", postReq, postResp)
+		err = l.client().Request("POST", "disk", postReq, postResp)
 	} else {
 		putResp := &struct {
 			IsOK    bool   `json:"is_ok"`
@@ -237,7 +237,7 @@ func (l *Disk) Save() error {
 		}{
 			IsOK: false,
 		}
-		err = l.client.Request("PUT", "disk", l, putResp)
+		err = l.client().Request("PUT", fmt.Sprintf("disk/%s", l.ID), l, putResp)
 	}
 
 	return err
@@ -247,23 +247,18 @@ func (l *Disk) Destroy() error {
 	if l.ID == "" {
 		return fmt.Errorf("is not saved yet")
 	}
-	return l.client.Request("DELETE", fmt.Sprintf("disk/%s", l.ID), nil, nil)
+	return l.client().Request("DELETE", fmt.Sprintf("disk/%s", l.ID), nil, nil)
 }
 
 func (l *Disk) Reload() error {
 	if l.ID == "" {
 		return fmt.Errorf("This is not saved yet")
 	}
-	jsonResp := &struct {
-		Disk *Disk `json:"Disk"`
-	}{
-		Disk: &Disk{client: l.client},
-	}
-	err := l.client.Request("GET", fmt.Sprintf("disk/%s", l.ID), nil, jsonResp)
+	n, err := l.service.GetByID(l.ID)
 	if err != nil {
 		return err
 	}
-	*l = *jsonResp.Disk
+	*l = *n
 	return nil
 }
 
@@ -285,4 +280,8 @@ func (l *Disk) SleepWhileCopying() error {
 		}
 	}
 	return err
+}
+
+func (l *Disk) client() *Client {
+	return l.service.api.client
 }

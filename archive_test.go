@@ -1,9 +1,6 @@
 package saklient
 
-import (
-	"os"
-	"testing"
-)
+import "testing"
 
 func TestArchiveService(t *testing.T) {
 	api := API.Authorize(accessToken, accessSecret)
@@ -13,7 +10,6 @@ func TestArchiveService(t *testing.T) {
 }
 func TestArchiveService_CRUD(t *testing.T) {
 	api := API.Authorize(accessToken, accessSecret)
-	api.client.DebugDumper = os.Stderr
 	archives, err := api.Archive.WithNameLike("CentOS 64bit").WithSizeGib(20).WithSharedScope().Limit(1).Find()
 	if err != nil {
 		t.Fatal(err)

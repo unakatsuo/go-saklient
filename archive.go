@@ -80,14 +80,14 @@ func (l *ArchiveService) Find() ([]*Archive, error) {
 		return nil, err
 	}
 	for _, d := range jsonResp.Archives {
-		d.client = l.api.client
+		d.service = l
 	}
 	return jsonResp.Archives, nil
 }
 
 func (l *ArchiveService) Create() *Archive {
 	return &Archive{
-		client: l.api.client,
+		service: l,
 	}
 }
 
@@ -116,11 +116,11 @@ type archiveRequest struct {
 }
 
 type Archive struct {
-	client       *Client `json:"-"`
-	ID           string  `json:"ID"`
-	DisplayOrder string  `json:"DisplayOrder"`
-	Name         string  `json:"Name"`
-	Description  string  `json:"Description"`
+	service      *ArchiveService `json:"-"`
+	ID           string          `json:"ID"`
+	DisplayOrder string          `json:"DisplayOrder"`
+	Name         string          `json:"Name"`
+	Description  string          `json:"Description"`
 	Plan         struct {
 		ID           int    `json:"ID"`
 		Name         string `json:"Name"`
@@ -229,7 +229,7 @@ func (l *Archive) Save() error {
 			Archive: dr,
 		}
 
-		err = l.client.Request("POST", "archive", postReq, postResp)
+		err = l.client().Request("POST", "archive", postReq, postResp)
 	} else {
 		putResp := &struct {
 			IsOK    bool   `json:"is_ok"`
@@ -237,7 +237,7 @@ func (l *Archive) Save() error {
 		}{
 			IsOK: false,
 		}
-		err = l.client.Request("PUT", "archive", l, putResp)
+		err = l.client().Request("PUT", fmt.Sprintf("archive/%s", l.ID), l, putResp)
 	}
 
 	return err
@@ -247,23 +247,18 @@ func (l *Archive) Destroy() error {
 	if l.ID == "" {
 		return fmt.Errorf("is not saved yet")
 	}
-	return l.client.Request("DELETE", fmt.Sprintf("archive/%s", l.ID), nil, nil)
+	return l.client().Request("DELETE", fmt.Sprintf("archive/%s", l.ID), nil, nil)
 }
 
 func (l *Archive) Reload() error {
 	if l.ID == "" {
 		return fmt.Errorf("This is not saved yet")
 	}
-	jsonResp := &struct {
-		Archive *Archive `json:"Archive"`
-	}{
-		Archive: &Archive{client: l.client},
-	}
-	err := l.client.Request("GET", fmt.Sprintf("archive/%s", l.ID), nil, jsonResp)
+	n, err := l.service.GetByID(l.ID)
 	if err != nil {
 		return err
 	}
-	*l = *jsonResp.Archive
+	*l = *n
 	return nil
 }
 
@@ -285,4 +280,8 @@ func (l *Archive) SleepWhileCopying() error {
 		}
 	}
 	return err
+}
+
+func (l *Archive) client() *Client {
+	return l.service.api.client
 }
