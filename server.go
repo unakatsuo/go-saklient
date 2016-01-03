@@ -1,6 +1,9 @@
 package saklient
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type ServerService struct {
 	api *APIService
@@ -59,6 +62,19 @@ type Server struct {
 		MemoryMB     int    `json:"MemoryMB"`
 		ServiceClass string `json:"ServiceClass"`
 	} `json:"ServerPlan"`
+	Instance *struct {
+		Server struct {
+			ID string `json:"ID"`
+		} `json:"Server"`
+		Status          string `json:"Status"`
+		BeforeStatus    string `json:"BeforeStatus"`
+		StatusChangedAt string `json:"StatusChangedAt"`
+		Host            struct {
+			Name string `json:"Name"`
+		} `json:"Host"`
+		CDROM        *struct{} `json:"CDROM"`
+		CDROMStroage *struct{} `json:"CDROMStorage"`
+	} `json:"Instance"`
 	Tags              []string      `json:"Tags"`
 	ConnectedSwitches []interface{} `json:"ConnectedSwitches"`
 }
@@ -115,4 +131,45 @@ func (s *Server) Reload() error {
 
 func (s *Server) client() *Client {
 	return s.service.api.client
+}
+
+func (s *Server) Boot() error {
+	if s.ID == "" {
+		return fmt.Errorf("This is not saved")
+	}
+	return s.client().Request("PUT", fmt.Sprintf("server/%s/power", s.ID), nil, nil)
+}
+
+func (s *Server) Shutdown() error {
+	if s.ID == "" {
+		return fmt.Errorf("This is not saved")
+	}
+	return s.client().Request("DELETE", fmt.Sprintf("server/%s/power", s.ID), nil, nil)
+}
+
+func (s *Server) InstanceStatus() string {
+	if s.Instance == nil {
+		return ""
+	}
+	return s.Instance.Status
+}
+
+func (s *Server) SleepUntilUp() error {
+	if s.ID == "" {
+		return fmt.Errorf("This is not saved")
+	}
+	var err error
+	for i := 0; i < 1000; i++ {
+		if i > 0 {
+			time.Sleep(1 * time.Second)
+			err = s.Reload()
+			if err != nil {
+				continue
+			}
+		}
+		if s.InstanceStatus() == "up" {
+			return nil
+		}
+	}
+	return err
 }

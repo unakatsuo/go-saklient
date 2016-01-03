@@ -53,4 +53,14 @@ func TestServerService_CRUD(t *testing.T) {
 		t.Fatal(err)
 	}
 	server.Reload()
+
+	t.Log("Boot server")
+	err = server.Boot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = server.SleepUntilUp()
+	if err != nil {
+		t.Fatal(err)
+	}
 }
