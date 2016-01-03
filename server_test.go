@@ -14,7 +14,7 @@ func TestServerService_CRUD(t *testing.T) {
 	server := api.Server.Create()
 	server.Name = "svr1"
 	server.Description = "test"
-	server.Plan.ID = 1
+	server.ServerPlan.ID = 1001
 	err := server.Save()
 	if err != nil {
 		t.Fatal(err)

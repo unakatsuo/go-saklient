@@ -137,7 +137,7 @@ func BasicAuthorize(token string, secret string) *APIService {
 	api := &APIService{
 		client: newClient(token, secret),
 	}
-	api.Server = &ServerService{api: api}
+	api.Server = newServerService(api)
 	api.Disk = newDiskService(api)
 	api.Archive = newArchiveService(api)
 	return api
