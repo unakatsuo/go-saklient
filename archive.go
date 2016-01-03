@@ -6,45 +6,38 @@ import (
 )
 
 type ArchiveService struct {
-	api      *APIService
-	offset   int
-	limit    int
-	tags     []string
-	filter   map[string]interface{}
-	sortKeys []string
+	api *APIService
+	basicQuery
 }
 
+func newArchiveService(api *APIService) *ArchiveService {
+	return (&ArchiveService{
+		api: api,
+	}).Reset()
+}
 func (l *ArchiveService) Offset(offset int) *ArchiveService {
-	l.offset = offset
+	l.basicQuery.Offset = offset
 	return l
 }
 
 func (l *ArchiveService) Limit(limit int) *ArchiveService {
-	l.limit = limit
+	l.basicQuery.Limit = limit
 	return l
 }
 
 func (l *ArchiveService) SortByName(reverse bool) *ArchiveService {
-	key := "Archive.Name"
-	if reverse {
-		key = "-" + key
-	}
-	l.sortKeys = append(l.sortKeys, key)
+	l.basicQuery.SortBy("Archive.Name", reverse)
 	return l
 }
 
 func (l *ArchiveService) SortBySize(reverse bool) *ArchiveService {
-	key := "Archive.SizeMB"
-	if reverse {
-		key = "-" + key
-	}
-	l.sortKeys = append(l.sortKeys, key)
+	l.basicQuery.SortBy("Archive.SizeMB", reverse)
 	return l
 }
 
 func (l *ArchiveService) FilterBy(key string, value interface{}, multiple bool) *ArchiveService {
 	// TODO: multipe case
-	l.filter[key] = value
+	l.basicQuery.Filter[key] = value
 	return l
 }
 
@@ -57,14 +50,12 @@ func (l *ArchiveService) WithSharedScope() *ArchiveService {
 }
 
 func (l *ArchiveService) WithTag(tag string) *ArchiveService {
-	l.tags = append(l.tags, tag)
+	l.basicQuery.WithTag(tag)
 	return l
 }
 
 func (l *ArchiveService) WithTags(tags []string) *ArchiveService {
-	for _, t := range tags {
-		l.tags = append(l.tags, t)
-	}
+	l.basicQuery.WithTags(tags)
 	return l
 }
 
@@ -73,11 +64,7 @@ func (l *ArchiveService) WithSizeGib(size int) *ArchiveService {
 }
 
 func (l *ArchiveService) Reset() *ArchiveService {
-	l.limit = 0
-	l.offset = 0
-	l.tags = []string{}
-	l.sortKeys = []string{}
-	l.filter = map[string]interface{}{}
+	l.basicQuery.Reset()
 	return l
 }
 
@@ -88,22 +75,10 @@ func (l *ArchiveService) Find() ([]*Archive, error) {
 		Count    int        `json:"Count"`
 		Archives []*Archive `json:"Archives"`
 	}{}
-	getReq := &struct {
-		From   int                    `json:"From,omitempty"`
-		Count  int                    `json:"Count,omitempty"`
-		Sort   []string               `json:"Sort,omitempty"`
-		Filter map[string]interface{} `json:"Filter,omitempty"`
-	}{
-		From:   l.offset,
-		Count:  l.limit,
-		Filter: l.filter,
-		Sort:   l.sortKeys,
-	}
-	err := l.api.client.Request("GET", "archive", getReq, jsonResp)
+	err := l.api.client.Request("GET", "archive", l.basicQuery, jsonResp)
 	if err != nil {
 		return nil, err
 	}
-	print(jsonResp.Total)
 	for _, d := range jsonResp.Archives {
 		d.client = l.api.client
 	}

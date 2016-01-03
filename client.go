@@ -138,11 +138,8 @@ func BasicAuthorize(token string, secret string) *APIService {
 		client: newClient(token, secret),
 	}
 	api.Server = &ServerService{api: api}
-	api.Disk = &DiskService{
-		api: api,
-	}
-	api.Archive = &ArchiveService{api: api}
-	api.Archive.Reset()
+	api.Disk = newDiskService(api)
+	api.Archive = newArchiveService(api)
 	return api
 }
 
@@ -152,4 +149,39 @@ var API struct {
 
 func init() {
 	API.Authorize = BasicAuthorize
+}
+
+// Handle common filter operations for collection API.
+// i.e. "GET /cloud/1.1/server" or "GET /cloud/1.1/archive"
+type basicQuery struct {
+	Offset   int                    `json:"From,omitempty"`
+	Limit    int                    `json:"Count,omitempty"`
+	tags     []string               `json:"-"`
+	Filter   map[string]interface{} `json:"Filter,omitempty"`
+	SortKeys []string               `json:"Sort,omitempty"`
+}
+
+func (b *basicQuery) SortBy(key string, reverse bool) {
+	if reverse {
+		key = "-" + key
+	}
+	b.SortKeys = append(b.SortKeys, key)
+}
+
+func (b *basicQuery) Reset() {
+	b.Offset = 0
+	b.Limit = 0
+	b.Filter = make(map[string]interface{}, 0)
+	b.SortKeys = make([]string, 0)
+	b.tags = make([]string, 0)
+}
+
+func (b *basicQuery) WithTag(tag string) {
+	b.tags = append(b.tags, tag)
+}
+
+func (b *basicQuery) WithTags(tags []string) {
+	for _, t := range tags {
+		b.tags = append(b.tags, t)
+	}
 }

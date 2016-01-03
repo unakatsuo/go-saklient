@@ -3,45 +3,39 @@ package saklient
 import "fmt"
 
 type DiskService struct {
-	api      *APIService
-	offset   int
-	limit    int
-	tags     []string
-	filter   map[string]interface{}
-	sortKeys []string
+	api *APIService
+	basicQuery
+}
+
+func newDiskService(api *APIService) *DiskService {
+	return (&DiskService{
+		api: api,
+	}).Reset()
 }
 
 func (l *DiskService) Offset(offset int) *DiskService {
-	l.offset = offset
+	l.basicQuery.Offset = offset
 	return l
 }
 
 func (l *DiskService) Limit(limit int) *DiskService {
-	l.limit = limit
+	l.basicQuery.Limit = limit
 	return l
 }
 
 func (l *DiskService) SortByName(reverse bool) *DiskService {
-	key := "Disk.Name"
-	if reverse {
-		key = "-" + key
-	}
-	l.sortKeys = append(l.sortKeys, key)
+	l.basicQuery.SortBy("Disk.Name", reverse)
 	return l
 }
 
 func (l *DiskService) SortBySize(reverse bool) *DiskService {
-	key := "Disk.SizeMB"
-	if reverse {
-		key = "-" + key
-	}
-	l.sortKeys = append(l.sortKeys, key)
+	l.basicQuery.SortBy("Disk.SizeMB", reverse)
 	return l
 }
 
 func (l *DiskService) FilterBy(key string, value interface{}, multiple bool) *DiskService {
 	// TODO: multipe case
-	l.filter[key] = value
+	l.basicQuery.Filter[key] = value
 	return l
 }
 
@@ -50,14 +44,12 @@ func (l *DiskService) WithNameLike(name string) *DiskService {
 }
 
 func (l *DiskService) WithTag(tag string) *DiskService {
-	l.tags = append(l.tags, tag)
+	l.basicQuery.WithTag(tag)
 	return l
 }
 
 func (l *DiskService) WithTags(tags []string) *DiskService {
-	for _, t := range tags {
-		l.tags = append(l.tags, t)
-	}
+	l.basicQuery.WithTags(tags)
 	return l
 }
 
@@ -70,11 +62,7 @@ func (l *DiskService) WithServerID(serverID string) *DiskService {
 }
 
 func (l *DiskService) Reset() *DiskService {
-	l.limit = 0
-	l.offset = 0
-	l.tags = []string{}
-	l.sortKeys = []string{}
-	l.filter = map[string]interface{}{}
+	l.basicQuery.Reset()
 	return l
 }
 
@@ -85,18 +73,7 @@ func (l *DiskService) Find() ([]*Disk, error) {
 		Count int     `json:"Count"`
 		Disks []*Disk `json:"Disks"`
 	}{}
-	getReq := &struct {
-		From   int                    `json:"From,omitempty"`
-		Count  int                    `json:"Count,omitempty"`
-		Sort   []string               `json:"Sort,omitempty"`
-		Filter map[string]interface{} `json:"Filter,omitempty"`
-	}{
-		From:   l.offset,
-		Count:  l.limit,
-		Filter: l.filter,
-		Sort:   l.sortKeys,
-	}
-	err := l.api.client.Request("GET", "disk", getReq, jsonResp)
+	err := l.api.client.Request("GET", "disk", l.basicQuery, jsonResp)
 	if err != nil {
 		return nil, err
 	}
