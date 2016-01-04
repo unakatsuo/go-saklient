@@ -147,6 +147,13 @@ func (s *Server) Shutdown() error {
 	return s.client().Request("DELETE", fmt.Sprintf("server/%s/power", s.ID), nil, nil)
 }
 
+func (s *Server) Stop() error {
+	if s.ID == "" {
+		return fmt.Errorf("This is not saved")
+	}
+	return s.client().Request("DELETE", fmt.Sprintf("server/%s/power", s.ID), map[string]bool{"Force": true}, nil)
+}
+
 func (s *Server) InstanceStatus() string {
 	if s.Instance == nil {
 		return ""
@@ -154,22 +161,42 @@ func (s *Server) InstanceStatus() string {
 	return s.Instance.Status
 }
 
+func sleepUntil(eval func() bool) error {
+	sleepSec := 2 * time.Second
+	timeout := 5 * time.Minute
+	startAt := time.Now()
+	for i := 0; time.Since(startAt) <= timeout; i++ {
+		if eval() {
+			return nil
+		}
+		time.Sleep(sleepSec)
+	}
+
+	return fmt.Errorf("Timed out")
+}
+
 func (s *Server) SleepUntilUp() error {
 	if s.ID == "" {
 		return fmt.Errorf("This is not saved")
 	}
-	var err error
-	for i := 0; i < 1000; i++ {
-		if i > 0 {
-			time.Sleep(1 * time.Second)
-			err = s.Reload()
-			if err != nil {
-				continue
-			}
+	return sleepUntil(func() bool {
+		err := s.Reload()
+		if err != nil {
+			return false
 		}
-		if s.InstanceStatus() == "up" {
-			return nil
-		}
+		return (s.InstanceStatus() == "up")
+	})
+}
+
+func (s *Server) SleepUntilDown() error {
+	if s.ID == "" {
+		return fmt.Errorf("This is not saved")
 	}
-	return err
+	return sleepUntil(func() bool {
+		err := s.Reload()
+		if err != nil {
+			return false
+		}
+		return (s.InstanceStatus() == "down" || s.InstanceStatus() == "")
+	})
 }

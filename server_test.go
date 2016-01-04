@@ -63,4 +63,24 @@ func TestServerService_CRUD(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	t.Log("stopping the server...")
+	err = server.Stop()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = server.SleepUntilDown()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("disconnecting the disk from the server...")
+	err = disk.Disconnect()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("deleting the server...")
+	err = server.Destroy()
+	if err != nil {
+		t.Fatal(err)
+	}
 }
