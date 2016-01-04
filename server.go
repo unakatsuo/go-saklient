@@ -1,9 +1,6 @@
 package saklient
 
-import (
-	"fmt"
-	"time"
-)
+import "fmt"
 
 type ServerService struct {
 	api *APIService
@@ -159,20 +156,6 @@ func (s *Server) InstanceStatus() string {
 		return ""
 	}
 	return s.Instance.Status
-}
-
-func sleepUntil(eval func() bool) error {
-	sleepSec := 2 * time.Second
-	timeout := 5 * time.Minute
-	startAt := time.Now()
-	for i := 0; time.Since(startAt) <= timeout; i++ {
-		if eval() {
-			return nil
-		}
-		time.Sleep(sleepSec)
-	}
-
-	return fmt.Errorf("Timed out")
 }
 
 func (s *Server) SleepUntilUp() error {

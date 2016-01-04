@@ -1,9 +1,6 @@
 package saklient
 
-import (
-	"fmt"
-	"time"
-)
+import "fmt"
 
 type ArchiveService struct {
 	api *APIService
@@ -266,20 +263,13 @@ func (l *Archive) SleepWhileCopying() error {
 	if l.ID == "" {
 		return fmt.Errorf("This is not saved yet")
 	}
-	var err error
-	for i := 0; i < 1000; i++ {
-		if i > 0 {
-			time.Sleep(1 * time.Second)
-			err = l.Reload()
-			if err != nil {
-				continue
-			}
+	return sleepUntil(func() bool {
+		err := l.Reload()
+		if err != nil {
+			return false
 		}
-		if l.Availability == "available" {
-			break
-		}
-	}
-	return err
+		return (l.Availability == "available")
+	})
 }
 
 func (l *Archive) client() *Client {

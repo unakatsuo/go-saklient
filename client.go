@@ -10,6 +10,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"time"
 )
 
 type Client struct {
@@ -194,4 +195,18 @@ type SourceResource interface {
 
 type subResourceID struct {
 	ID string `json:"ID"`
+}
+
+func sleepUntil(eval func() bool) error {
+	sleepSec := 2 * time.Second
+	timeout := 5 * time.Minute
+	startAt := time.Now()
+	for i := 0; time.Since(startAt) <= timeout; i++ {
+		if eval() {
+			return nil
+		}
+		time.Sleep(sleepSec)
+	}
+
+	return fmt.Errorf("Timed out")
 }
