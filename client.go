@@ -129,6 +129,7 @@ type APIService struct {
 	Server  *ServerService
 	Disk    *DiskService
 	Archive *ArchiveService
+	Iface   *IfaceService
 }
 
 type AuthorizeFunc func(token string, secret string) *APIService
@@ -140,6 +141,7 @@ func BasicAuthorize(token string, secret string) *APIService {
 	api.Server = newServerService(api)
 	api.Disk = newDiskService(api)
 	api.Archive = newArchiveService(api)
+	api.Iface = newIfaceService(api)
 	return api
 }
 

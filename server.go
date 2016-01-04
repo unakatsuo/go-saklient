@@ -200,3 +200,13 @@ func (s *Server) SleepUntilDown() error {
 		return (s.InstanceStatus() == "down" || s.InstanceStatus() == "")
 	})
 }
+
+func (s *Server) AddIface() (*Iface, error) {
+	if s.ID == "" {
+		return nil, fmt.Errorf("This is not saved")
+	}
+	iface := s.service.api.Iface.Create()
+	iface.Server.ID = s.ID
+	err := iface.Save()
+	return iface, err
+}

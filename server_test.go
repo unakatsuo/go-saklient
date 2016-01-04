@@ -41,6 +41,13 @@ func TestServerService_CRUD(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	t.Log("connecting the server to shared segment...")
+	iface, err := server.AddIface()
+	if err != nil {
+		t.Fatal(err)
+	}
+	iface.ConnectToSharedSegment()
+
 	err = disk.SleepWhileCopying()
 	if err != nil {
 		t.Fatal(err)
