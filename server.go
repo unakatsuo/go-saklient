@@ -112,7 +112,7 @@ func (s *Server) Destroy() error {
 	}
 	err := s.client().Request("DELETE", fmt.Sprintf("server/%s", s.ID), nil, nil)
 	if err != nil {
-		return nil
+		return err
 	}
 	return nil
 }
