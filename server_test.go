@@ -21,6 +21,7 @@ func TestServerService_CRUD(t *testing.T) {
 	}
 	archive := archives[0]
 
+	t.Log("creating a disk...")
 	disk := api.Disk.Create()
 	disk.Name = "test"
 	disk.Plan.ID = 4
@@ -30,6 +31,7 @@ func TestServerService_CRUD(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	t.Log("creating a server...")
 	server := api.Server.Create()
 	server.Name = "svr1"
 	server.Description = "test"
@@ -54,7 +56,7 @@ func TestServerService_CRUD(t *testing.T) {
 	}
 	server.Reload()
 
-	t.Log("Boot server")
+	t.Log("booting the server...")
 	err = server.Boot()
 	if err != nil {
 		t.Fatal(err)
