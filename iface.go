@@ -118,3 +118,13 @@ func (s *Iface) DisconnectFromSwytch() error {
 	}
 	return s.client().Request("DELETE", fmt.Sprintf("interface/%s/to/switch", s.ID), nil, nil)
 }
+
+func (s *Iface) ConnectToSwytch(swytch *Swytch) error {
+	if s.ID == "" {
+		return fmt.Errorf("This is not saved")
+	}
+	if swytch.ID == "" {
+		return fmt.Errorf("swytch is invalid")
+	}
+	return s.client().Request("PUT", fmt.Sprintf("interface/%s/to/switch/%s", s.ID, swytch.ID), nil, nil)
+}
