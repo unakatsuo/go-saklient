@@ -131,6 +131,7 @@ type APIService struct {
 	Disk    *DiskService
 	Archive *ArchiveService
 	Iface   *IfaceService
+	Swytch  *SwytchService
 }
 
 type AuthorizeFunc func(token string, secret string) *APIService
@@ -143,6 +144,7 @@ func BasicAuthorize(token string, secret string) *APIService {
 	api.Disk = newDiskService(api)
 	api.Archive = newArchiveService(api)
 	api.Iface = newIfaceService(api)
+	api.Swytch = newSwytchService(api)
 	return api
 }
 
