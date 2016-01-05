@@ -132,6 +132,7 @@ type APIService struct {
 	Archive *ArchiveService
 	Iface   *IfaceService
 	Swytch  *SwytchService
+	Router  *RouterService
 }
 
 type AuthorizeFunc func(token string, secret string) *APIService
@@ -145,6 +146,7 @@ func BasicAuthorize(token string, secret string) *APIService {
 	api.Archive = newArchiveService(api)
 	api.Iface = newIfaceService(api)
 	api.Swytch = newSwytchService(api)
+	api.Router = newRouterService(api)
 	return api
 }
 
@@ -164,6 +166,8 @@ type basicQuery struct {
 	tags     []string               `json:"-"`
 	Filter   map[string]interface{} `json:"Filter,omitempty"`
 	SortKeys []string               `json:"Sort,omitempty"`
+	Include  []string               `json:Include,omitempty`
+	Exclude  []string               `json:Exclude,omitempty`
 }
 
 func (b *basicQuery) SortBy(key string, reverse bool) {
