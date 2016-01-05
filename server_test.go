@@ -61,6 +61,13 @@ func TestServerService_CRUD(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	diskconf := disk.CreateConfig()
+	diskconf.HostName = "test"
+	diskconf.Password = "test"
+	err = diskconf.Write()
+	if err != nil {
+		t.Error(err)
+	}
 	server.Reload()
 
 	t.Log("booting the server...")

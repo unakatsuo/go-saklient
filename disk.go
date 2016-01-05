@@ -292,3 +292,10 @@ func (l *Disk) Disconnect() error {
 	}
 	return l.client().Request("DELETE", fmt.Sprintf("disk/%s/to/server", l.ID), nil, nil)
 }
+
+func (l *Disk) CreateConfig() *DiskConfig {
+	return &DiskConfig{
+		client: l.client(),
+		diskID: l.ID,
+	}
+}
