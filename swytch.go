@@ -26,7 +26,7 @@ func (s *SwytchService) GetByID(id string) (*Swytch, error) {
 	jsonResp := &struct {
 		IsOK    bool    `json:"is_ok"`
 		Success bool    `json:"Success"`
-		Swytch  *Swytch `json:"Swytch"`
+		Swytch  *Swytch `json:"Switch"`
 	}{
 		Swytch: s.Create(),
 	}
