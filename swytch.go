@@ -42,11 +42,53 @@ type swytchRequest struct {
 	Description string `json:"Description,omitempty"`
 }
 
+type IPv4Net struct {
+	ID             int    `json:"ID"`
+	NetworkAddress string `json:"NetworkAddress"`
+	NetworkMaskLen int    `json:"NetworkMaskLen"`
+	DefaultRoute   string `json:"DefaultRoute"`
+	//NextHop        []string          `json:"NextHop"`
+	//StaticRoute    []string          `json:"StaticRouter"`
+	ServiceClass string            `json:"ServiceClass"`
+	IPAddresses  map[string]string `json:"IPAddresses"`
+}
+
+type IPv6Net struct {
+	ID             int    `json:"ID"`
+	ServiceID      string `json:"ServiceID"`
+	IPv6Prefix     string `json:"IPv6Prefix"`
+	IPv6PrefixLen  int    `json:"IPv6PrefixLen"`
+	IPv6PrefixTail string `json:"IPv6PrefixTail"`
+	ServiceClass   string `json:"ServiceClass"`
+	IPv6Table      struct {
+		ID int `json:"ID"`
+	} `json:"IPv6Table"`
+	NamedIPv6AddrCount int    `json:"NamedIPv6AddrCount"`
+	CreatedAt          string `json:"CreatedAt"`
+}
+
 type Swytch struct {
-	service     *SwytchService `json:"-"`
-	ID          string         `json:"ID"`
-	Name        string         `json:"Name"`
-	Description string         `json:"Description"`
+	service          *SwytchService `json:"-"`
+	ID               string         `json:"ID"`
+	Name             string         `json:"Name"`
+	Description      string         `json:"Description"`
+	ServerCount      int            `json:"ServerCount"`
+	ApplianceCount   int            `json:"ApplianceCount"`
+	Scope            string         `json:"Scope"`
+	UserSubnet       *struct{}      `json:"UserSubnet"`
+	HybridConnection *struct{}      `json:"HybridConnection"`
+	CreatedAt        string         `json:"CreatedAt"`
+	ServiceClass     string         `json:"ServiceClass"`
+	Internet         *struct {
+		ID            string `json:"ID"`
+		Name          string `json:"Name"`
+		BandWidthMbps int    `json:"BandWidthMbps"`
+		Scope         string `json:"Scope"`
+		ServiceClass  string `json:"ServiceClass"`
+	} `json:"Internet"`
+	IPv4Nets []*IPv4Net `json:"Subnets"`
+	IPv6Nets []*IPv6Net `json:"IPv6Nets"`
+	Bridge   *struct{}  `json:"Bridge"`
 }
 
 func (s *Swytch) Save() error {
@@ -101,4 +143,45 @@ func (s *Swytch) Reload() error {
 
 func (s *Swytch) client() *Client {
 	return s.service.api.client
+}
+
+func (s *Swytch) Router() (*Router, error) {
+	if s.ID == "" {
+		return nil, fmt.Errorf("This is not saved")
+	}
+	if s.Internet.ID == "" {
+		return nil, fmt.Errorf("nil")
+	}
+	return s.service.api.Router.GetByID(s.Internet.ID)
+}
+
+func (s *Swytch) AddIPv6Net() (*IPv6Net, error) {
+	if s.ID == "" {
+		return nil, fmt.Errorf("This is not saved")
+	}
+	router, err := s.Router()
+	if err != nil {
+		return nil, err
+	}
+	ipv6n, err := router.AddIPv6Net()
+	if err != nil {
+		return nil, err
+	}
+	err = s.Reload()
+	return ipv6n, err
+}
+
+func (s *Swytch) RemoveIPv6Net() error {
+	if s.ID == "" {
+		return fmt.Errorf("This is not saved")
+	}
+	router, err := s.Router()
+	if err != nil {
+		return err
+	}
+	err = router.RemoveIPv6Net()
+	if err != nil {
+		return err
+	}
+	return s.Reload()
 }

@@ -142,3 +142,54 @@ func (l *Router) SleepWhileCreating() error {
 		return false
 	})
 }
+
+func (l *Router) GetSwytch() (*Swytch, error) {
+	if l.ID == "" {
+		return nil, fmt.Errorf("This is not saved yet")
+	}
+	if l.Swytch == nil || l.Swytch.ID == "" {
+		return nil, fmt.Errorf("Invalid Switch")
+	}
+	sw, err := l.service.api.Swytch.GetByID(l.Swytch.ID)
+	if err != nil {
+		return nil, err
+	}
+	l.Swytch = sw
+	return sw, nil
+}
+
+func (l *Router) AddIPv6Net() (*IPv6Net, error) {
+	if l.ID == "" {
+		return nil, fmt.Errorf("This is not saved yet")
+	}
+	resp := &struct {
+		IsOK    bool     `json:"is_ok"`
+		IPv6Net *IPv6Net `json:"IPv6Net"`
+	}{}
+	err := l.client().Request("POST", fmt.Sprintf("internet/%s/ipv6net", l.ID), nil, resp)
+	if err != nil {
+		return nil, err
+	}
+	err = l.Reload()
+	if err != nil {
+		return nil, err
+	}
+	return resp.IPv6Net, nil
+}
+
+func (l *Router) RemoveIPv6Net() error {
+	if l.ID == "" {
+		return fmt.Errorf("This is not saved yet")
+	}
+	if l.Swytch == nil || l.Swytch.ID == "" {
+		return fmt.Errorf("Invalid .Swytch")
+	}
+	if len(l.Swytch.IPv6Nets) < 1 {
+		return fmt.Errorf("No IPv6 network assignment")
+	}
+	err := l.client().Request("DELETE", fmt.Sprintf("internet/%s/ipv6net/%d", l.ID, l.Swytch.IPv6Nets[0].ID), nil, nil)
+	if err != nil {
+		return err
+	}
+	return l.Reload()
+}
